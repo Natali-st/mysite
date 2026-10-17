@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <!-- SEO и Open Graph теги -->
+    <meta name="description" content="{% if article %}{{ article.text|truncatewords:20 }}{% else %}Лучшие товары и лайфхаки для уютного дома.{% endif %}">
+
+    <!-- Для Google Discover (обязательно для больших картинок) -->
+    <meta name="robots" content="max-image-preview:large">
+
+    <!-- Для Telegram, VK и других соцсетей -->
+    <meta property="og:title" content="{% if article %}{{ article.title }}{% else %}До/После - Товары для дома{% endif %}">
+    <meta property="og:description" content="{% if article %}{{ article.text|truncatewords:20 }}{% else %}Лучшие товары для уютного дома.{% endif %}">
+    <meta property="og:type" content="website">
+
+    {% if article.image %}
+        <meta property="og:image" content="http://127.0.0.1:8000{{ article.image.url }}">
+    {% endif %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мой сайт о товарах для дома</title>
+    <!-- Подключаем Tailwind CSS для красоты -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+</head>
+<body class="bg-[#FAF8F5] text-gray-800" style="font-family: 'Noto Sans SC', system-ui, sans-serif;">
+
+    <!-- Шапка сайта -->
+    <header class="bg-[#2F5D50] text-white p-6 shadow-md">
+<h1 class="text-3xl font-bold">До/После</h1>
+            <p class="text-sm mt-1 opacity-80">Товары и лайфхаки для уютного дома</p>
+
+            <!-- ВОТ ЭТО МЕНЮ -->
+            <nav class="mt-4 flex gap-4">
+                <a href="{% url 'home' %}" class="text-white hover:text-[#FAF8F5] font-semibold">Все статьи</a>
+                {% for category in categories %}
+                    <a href="{% url 'category_list' category.slug %}" class="text-white hover:text-[#FAF8F5] font-semibold">{{ category.name }}</a>
+                {% endfor %}
+            </nav>
+
+        </div>
+    </header>
+
+    <!-- Основной контент (сюда будут вставляться другие страницы) -->
+    <main class="max-w-4xl mx-auto p-6 mt-4">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <!-- Подвал -->
+    <footer class="text-center text-gray-500 text-sm mt-12 mb-6">
+        &copy; 2026 Мой сайт. Все права защищены. | Партнёр ePN
+    </footer>
+
+</body>
+</html>

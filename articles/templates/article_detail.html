@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="bg-white rounded-lg shadow-md p-8 border border-gray-100">
+        <!-- Кнопка назад -->
+        <a href="{% url 'home' %}" class="text-[#2F5D50] font-semibold hover:underline mb-6 inline-block">← Назад на главную</a>
+
+        <!-- Категория и Дата -->
+        <div class="flex items-center gap-4 mb-4">
+            {% if article.category %}
+                <span class="text-xs font-bold text-[#C96F4A] uppercase tracking-wide bg-orange-50 px-2 py-1 rounded">{{ article.category.name }}</span>
+            {% endif %}
+            <span class="text-sm text-gray-400">Опубликовано: {{ article.created_at|date:"d.m.Y" }}</span>
+        </div>
+
+        <!-- Заголовок -->
+        <h1 class="text-4xl font-bold text-gray-900 mb-6">{{ article.title }}</h1>
+
+        <!-- Картинка -->
+        {% if article.image %}
+            <img src="{{ article.image.url }}" alt="{{ article.title }}" class="w-full max-h-[500px] object-cover rounded-lg mb-8 shadow-sm">
+        {% endif %}
+
+        <!-- Текст статьи (используем класс prose для красивого форматирования) -->
+        <div class="text-lg text-gray-700 leading-relaxed prose prose-lg max-w-none mb-10">
+            {{ article.text|linebreaks }}
+        </div>
+        <!-- Список покупок -->
+        {% if article.products.all %}
+        <div class="mt-10 bg-white border-2 border-[#FAF8F5] rounded-2xl p-6 shadow-sm">
+            <h3 class="text-2xl font-bold mb-6 text-[#2F5D50] font-sans">🛒 Список покупок</h3>
+
+            <div class="flex flex-col gap-4">
+                {% for product in article.products.all %}
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <span class="font-semibold text-gray-800">{{ product.name }}</span>
+
+                    <div class="flex items-center gap-4">
+                        <span class="text-[#C96F4A] font-bold">{{ product.price }} ₽</span>
+                        <a href="{{ product.link }}" target="_blank" rel="nofollow" class="bg-[#2F5D50] text-white px-4 py-2 rounded-xl text-sm hover:bg-[#1e3d33] transition">
+                            Купить
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Блок "Поделиться" -->
+        <div class="border-t border-gray-200 pt-6 mt-6">
+            <h3 class="text-lg font-bold mb-3">Понравилась идея? Поделитесь с друзьями!</h3>
+            <div class="flex gap-3">
+                <!-- Кнопка ВК -->
+                <a href="https://vk.com/share.php?url=http://127.0.0.1:8000{% url 'article_detail' article.pk %}&title={{ article.title }}" target="_blank" class="bg-[#0077FF] text-white px-4 py-2 rounded hover:bg-blue-700 transition">ВКонтакте</a>
+
+                <!-- Кнопка Telegram -->
+                <a href="https://t.me/share/url?url=http://127.0.0.1:8000{% url 'article_detail' article.pk %}&text={{ article.title }}" target="_blank" class="bg-[#0088cc] text-white px-4 py-2 rounded hover:bg-blue-500 transition">Telegram</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
