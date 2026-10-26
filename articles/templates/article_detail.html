@@ -1,62 +1,165 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <div class="bg-white rounded-lg shadow-md p-8 border border-gray-100">
-        <!-- Кнопка назад -->
-        <a href="{% url 'home' %}" class="text-[#2F5D50] font-semibold hover:underline mb-6 inline-block">← Назад на главную</a>
+<article class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm p-6 md:p-10 border border-gray-100">
+    
+    <a href="{% url 'home' %}" class="text-[#2F5D50] font-semibold hover:underline mb-6 inline-block text-sm">← Назад на главную</a>
 
-        <!-- Категория и Дата -->
-        <div class="flex items-center gap-4 mb-4">
-            {% if article.category %}
-                <span class="text-xs font-bold text-[#C96F4A] uppercase tracking-wide bg-orange-50 px-2 py-1 rounded">{{ article.category.name }}</span>
-            {% endif %}
-            <span class="text-sm text-gray-400">Опубликовано: {{ article.created_at|date:"d.m.Y" }}</span>
-        </div>
-
-        <!-- Заголовок -->
-        <h1 class="text-4xl font-bold text-gray-900 mb-6">{{ article.title }}</h1>
-
-        <!-- Картинка -->
-        {% if article.image %}
-            <img src="{{ article.image.url }}" alt="{{ article.title }}" class="w-full max-h-[500px] object-cover rounded-lg mb-8 shadow-sm">
+    <div class="text-center mb-8">
+        {% if article.category %}
+            <span class="text-xs font-bold text-[#C96F4A] uppercase tracking-widest">{{ article.category.name }}</span>
         {% endif %}
+        <h1 class="text-3xl md:text-5xl font-black mt-2 mb-4 font-serif">{{ article.title }}</h1>
+        <p class="text-gray-400 text-sm">Опубликовано: {{ article.created_at|date:"d.m.Y" }}</p>
+    </div>
 
-        <!-- Текст статьи (используем класс prose для красивого форматирования) -->
-        <div class="text-lg text-gray-700 leading-relaxed prose prose-lg max-w-none mb-10">
-            {{ article.text|linebreaks }}
+   <!-- ФОТО ДО/ПОСЛЕ (Сетка) -->
+    {% if article.image_before and article.image_after %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 max-w-4xl mx-auto">
+        <!-- Картинка ДО -->
+        <div class="relative rounded-xl overflow-hidden shadow-md h-64 md:h-80">
+            <span class="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 text-sm font-bold rounded z-10">ДО</span>
+            <img src="{{ article.image_before.url }}" alt="До" class="w-full h-full object-cover">
         </div>
-        <!-- Список покупок -->
-        {% if article.products.all %}
-        <div class="mt-10 bg-white border-2 border-[#FAF8F5] rounded-2xl p-6 shadow-sm">
-            <h3 class="text-2xl font-bold mb-6 text-[#2F5D50] font-sans">🛒 Список покупок</h3>
 
-            <div class="flex flex-col gap-4">
-                {% for product in article.products.all %}
-                <div class="flex items-center justify-between border-b border-gray-100 pb-3">
-                    <span class="font-semibold text-gray-800">{{ product.name }}</span>
-
-                    <div class="flex items-center gap-4">
-                        <span class="text-[#C96F4A] font-bold">{{ product.price }} ₽</span>
-                        <a href="{{ product.link }}" target="_blank" rel="nofollow" class="bg-[#2F5D50] text-white px-4 py-2 rounded-xl text-sm hover:bg-[#1e3d33] transition">
-                            Купить
-                        </a>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Блок "Поделиться" -->
-        <div class="border-t border-gray-200 pt-6 mt-6">
-            <h3 class="text-lg font-bold mb-3">Понравилась идея? Поделитесь с друзьями!</h3>
-            <div class="flex gap-3">
-                <!-- Кнопка ВК -->
-                <a href="https://vk.com/share.php?url=http://127.0.0.1:8000{% url 'article_detail' article.pk %}&title={{ article.title }}" target="_blank" class="bg-[#0077FF] text-white px-4 py-2 rounded hover:bg-blue-700 transition">ВКонтакте</a>
-
-                <!-- Кнопка Telegram -->
-                <a href="https://t.me/share/url?url=http://127.0.0.1:8000{% url 'article_detail' article.pk %}&text={{ article.title }}" target="_blank" class="bg-[#0088cc] text-white px-4 py-2 rounded hover:bg-blue-500 transition">Telegram</a>
-            </div>
+        <!-- Картинка ПОСЛЕ -->
+        <div class="relative rounded-xl overflow-hidden shadow-md h-64 md:h-80">
+            <span class="absolute top-4 right-4 bg-[#C96F4A] text-white px-3 py-1 text-sm font-bold rounded z-10">ПОСЛЕ</span>
+            <img src="{{ article.image_after.url }}" alt="После" class="w-full h-full object-cover">
         </div>
     </div>
+    {% endif %}
+
+    <!-- Текст статьи -->
+    <div class="prose prose-lg max-w-none text-gray-700 leading-relaxed mb-12">
+        {{ article.text|linebreaks }}
+    </div>
+
+    <!-- Список покупок -->
+    {% if article.products.all %}
+    <div class="bg-[#F3EFE7] rounded-2xl p-6 md:p-8 border border-gray-200">
+        <h2 class="text-2xl font-bold mb-6 border-b border-gray-300 pb-4 font-serif text-[#2F5D50]">Список покупок</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="text-xs text-gray-500 uppercase tracking-wider font-bold">
+                        <th class="pb-3">Товар</th>
+                        <th class="pb-3">Цена</th>
+                        <th class="pb-3 text-right">Купить</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-300">
+                    {% for product in article.products.all %}
+                    <tr class="hover:bg-white/50 transition">
+                        <td class="py-4 font-medium text-gray-800">{{ product.name }}</td>
+                        <td class="py-4 text-[#C96F4A] font-bold">{{ product.price }} ₽</td>
+                        <td class="py-4 text-right">
+                            <a href="{{ product.link }}" target="_blank" rel="nofollow" class="inline-block bg-[#2F5D50] text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-black transition">
+                                Купить
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- БЛОК "ВАМ МОЖЕТ ПОНРАВИТЬСЯ" -->
+    {% if related_products %}
+    <div class="mt-12 pt-8 border-t border-gray-200">
+        <h3 class="text-2xl font-bold font-serif mb-6 text-[#2F5D50]">Вам может понравиться</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {% for product in related_products %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3 flex flex-col justify-between hover:shadow-md transition">
+                <div>
+                    <h4 class="font-bold text-gray-800 text-sm mb-2">{{ product.name }}</h4>
+                    <div class="h-24 bg-gray-50 rounded mb-3 overflow-hidden flex items-center justify-center">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+                        {% else %}
+                            <span class="text-gray-400 text-xs">Фото</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center justify-between mt-1">
+                    <span class="text-[#C96F4A] font-bold text-base">{{ product.price }} ₽</span>
+                    <a href="{{ product.link }}" target="_blank" rel="nofollow" class="bg-[#2F5D50] text-white px-3 py-1.5 rounded text-xs font-bold hover:bg-black transition">
+                        Купить
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+   <!-- ВСТАВЛЯЙТЕ КОД ЗВЕЗДОЧЕК СЮДА -->
+    <div class="mt-10 pt-6 border-t border-gray-200 flex flex-col items-center">
+        <p class="text-lg font-bold mb-3 text-gray-700">Помогла ли вам эта статья?</p>
+
+        <div class="flex gap-2 text-3xl cursor-pointer" id="star-rating">
+            <span class="star hover:text-yellow-400 transition" data-value="1">★</span>
+            <span class="star hover:text-yellow-400 transition" data-value="2">★</span>
+            <span class="star hover:text-yellow-400 transition" data-value="3">★</span>
+            <span class="star hover:text-yellow-400 transition" data-value="4">★</span>
+            <span class="star hover:text-yellow-400 transition" data-value="5">★</span>
+        </div>
+        <p id="rating-message" class="text-sm text-gray-500 mt-2 h-5"></p>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var stars = document.querySelectorAll('.star');
+        var message = document.getElementById('rating-message');
+        var currentRating = parseInt("{{ article.rating|default:0 }}");
+
+        function updateStars(rating) {
+            stars.forEach(function(star, index) {
+                if (index < rating) {
+                    star.classList.add('text-yellow-400');
+                    star.classList.remove('text-gray-300');
+                } else {
+                    star.classList.remove('text-yellow-400');
+                    star.classList.add('text-gray-300');
+                }
+            });
+        }
+
+        if (currentRating > 0) {
+            updateStars(currentRating);
+            message.innerText = "Спасибо за вашу оценку!";
+        } else {
+            updateStars(0);
+        }
+
+        stars.forEach(function(star) {
+            star.addEventListener('click', function() {
+                var value = parseInt(this.getAttribute('data-value'));
+                currentRating = value;
+                updateStars(value);
+
+                fetch('/rate/{{ article.pk }}/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'rating=' + value
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if(data.success) {
+                        message.innerText = "Спасибо! Ваша оценка сохранена.";
+                        message.classList.remove('text-gray-500');
+                        message.classList.add('text-green-600', 'font-bold');
+                    }
+                });
+            });
+        });
+    });
+    </script>
+
+</article> <!-- ВОТ ЭТОТ ТЕГ ДОЛЖЕН БЫТЬ В САМОМ КОНЦЕ -->
 {% endblock %}

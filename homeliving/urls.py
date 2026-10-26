@@ -25,6 +25,8 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('category/<slug:category_slug>/', views.home, name='category_list'),
     path('article/<int:pk>/', views.article_detail, name='article_detail'),
+    path('like/<int:pk>/', views.add_like, name='add_like'),
+    path('rate/<int:pk>/', views.rate_article, name='rate_article'),
 ]
 
 if settings.DEBUG:
