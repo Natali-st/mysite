@@ -16,35 +16,35 @@
 
     <title>Сначала измерь, потом купи. Товары для дома.</title>
 
-    <!-- Подключение элегантных шрифтов (Prata для заголовков, Inter для текста) -->
+    <!-- СТРОГИЙ БЕСПЛАТНЫЙ ШРИФТ PT Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Prata&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
 
     <style>
-        /* Применяем шрифт Prata ко всем заголовкам */
-        h1, h2, h3, h4, .font-serif {
-            font-family: 'Prata', serif;
+        /* Применяем строгий шрифт ко всему сайту */
+        body, h1, h2, h3, h4, .font-serif {
+            font-family: 'PT Sans', sans-serif !important;
         }
     </style>
 </head>
-<body class="bg-white text-[#1A1A1A] antialiased" style="font-family: 'Inter', sans-serif;">
+<body class="bg-[#FAF8F5] text-[#1A1A1A] antialiased">
 
-    <!-- Шапка сайта -->
-    <header class="bg-[#FAF0E6] border-b border-gray-200 py-8 px-4 shadow-sm">
+    <!-- Шапка сайта с фиолетовым градиентом -->
+    <header class="bg-gradient-to-r from-[#F3E5F5] via-[#E1BEE7] to-[#D1C4E9] border-b border-gray-200 py-8 px-4 shadow-sm">
         <div class="max-w-6xl mx-auto text-center">
 
-            <!-- Главный заголовок -->
+            <!-- Главный заголовок (Темно-синий) -->
             <a href="{% url 'home' %}" class="inline-block">
-                <h1 class="text-3xl md:text-5xl font-serif tracking-tight mb-3 hover:text-[#C96F4A] transition">Сначала измерь, потом купи</h1>
+                <h1 class="text-3xl md:text-5xl font-bold tracking-tight mb-3 text-[#1A237E]">Сначала измерь, потом купи</h1>
             </a>
-            <p class="text-gray-500 text-sm md:text-base mb-6 font-medium">Товары для дома. Реальные кейсы преображения и списки покупок</p>
+            <p class="text-gray-700 text-sm md:text-base mb-6 font-medium">Товары для дома. Реальные кейсы преображения и списки покупок</p>
 
-            <!-- Меню категорий -->
-            <nav class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs md:text-sm font-semibold uppercase tracking-wider text-gray-600 mb-6">
+ <!-- Меню категорий -->
+            <nav class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs md:text-sm font-bold uppercase tracking-wider text-gray-700 mb-6">
                 <a href="{% url 'home' %}" class="hover:text-[#C96F4A] transition">Все статьи</a>
                 {% for category in categories %}
                     <a href="{% url 'category_list' category.slug %}" class="hover:text-[#C96F4A] transition">{{ category.name }}</a>
@@ -55,9 +55,8 @@
             <div class="max-w-md mx-auto">
                 <form method="GET" action="{% url 'home' %}" class="relative flex items-center">
                     <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Поиск по идеям..." 
-                           class="w-full pl-5 pr-12 py-2.5 rounded-full border border-gray-300 focus:outline-none focus:border-[#C96F4A] text-sm text-gray-700 bg-gray-50 focus:bg-white shadow-sm transition">
-                    <button type="submit" class="absolute right-4 text-gray-400 hover:text-[#C96F4A] transition">
-                        <!-- Иконка лупы -->
+                           class="w-full pl-5 pr-12 py-2.5 rounded-full border border-gray-300 focus:outline-none focus:border-[#C96F4A] text-sm text-gray-800 bg-white/80 backdrop-blur focus:bg-white shadow-sm transition">
+                    <button type="submit" class="absolute right-4 text-gray-500 hover:text-[#C96F4A] transition">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
@@ -78,34 +77,6 @@
     <footer class="text-center text-gray-400 text-sm py-10 mt-10 border-t border-gray-200">
         &copy; 2026 Сначала измерь, потом купи. Все права защищены. | Партнёр ePN
     </footer>
-<!-- Кнопка "Наверх" -->
-    <button id="scrollTopBtn" onclick="scrollToTop()" 
-            class="fixed bottom-8 right-8 bg-[#2F5D50] text-white p-3 rounded-full shadow-lg hover:bg-[#C96F4A] transition-all duration-300 opacity-0 pointer-events-none z-50">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
-        </svg>
-    </button>
-    <!-- Скрипт для появления и работы кнопки -->
-    <script>
-        // Показываем кнопку, когда прокрутили 300 пикселей вниз
-        window.onscroll = function() {
-            var btn = document.getElementById("scrollTopBtn");
-            if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
-                btn.classList.remove("opacity-0", "pointer-events-none");
-                btn.classList.add("opacity-100", "pointer-events-auto");
-            } else {
-                btn.classList.add("opacity-0", "pointer-events-none");
-                btn.classList.remove("opacity-100", "pointer-events-auto");
-            }
-        };
 
-        // Плавная прокрутка наверх
-        function scrollToTop() {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        }
-    </script>
 </body>
 </html>

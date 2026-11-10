@@ -9,12 +9,22 @@ def home(request, category_slug=None):
     reviews = Review.objects.all().order_by('-created_at')[:3]
     top_products = Product.objects.all().order_by('?')[:3] 
 
+    # --- ЛОГИКА ФИЛЬТРА (Идея 1) ---
+    recipient_filter = request.GET.get('recipient')
+    occasion_filter = request.GET.get('occasion')
+    filtered_products = None
+
+    if recipient_filter or occasion_filter:
+        filtered_products = Product.objects.all()
+        if recipient_filter:
+            filtered_products = filtered_products.filter(recipient=recipient_filter)
+        if occasion_filter:
+            filtered_products = filtered_products.filter(occasion=occasion_filter)
+
     query = request.GET.get('q') 
     if query:
         articles = articles.filter(
-            Q(title__icontains=query) | 
-            Q(text__icontains=query) | 
-            Q(category__name__icontains=query)
+            Q(titleicontains=query) | Q(texticontains=query) | Q(categorynameicontains=query)
         )
 
     current_category = None
@@ -28,7 +38,7 @@ def home(request, category_slug=None):
         if name and text:
             Review.objects.create(name=name, text=text)
             return redirect('home')
-            
+
     return render(request, 'index.html', {
         'articles': articles, 
         'categories': categories,
@@ -36,6 +46,7 @@ def home(request, category_slug=None):
         'top_products': top_products, 
         'current_category': current_category,
         'query': query,
+        'filtered_products': filtered_products, # Передаем товары из фильтра
     })
 
 # --- ВОТ ЗДЕСЬ МЫ ИЩЕМ ПОХОЖИЕ ТОВАРЫ ---
