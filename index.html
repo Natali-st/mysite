@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Нейрофильтр подарков</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    background: #05070f;
+    color: #e8ecff;
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+  }
+
+  /* ===== ФОН: градиенты ===== */
+  .bg-layer {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background:
+      radial-gradient(1200px 800px at 15% -10%, rgba(40,90,255,0.35), transparent 60%),
+      radial-gradient(900px 700px at 110% 20%, rgba(0,180,255,0.25), transparent 60%),
+      radial-gradient(800px 800px at 50% 120%, rgba(70,40,200,0.35), transparent 60%),
+      linear-gradient(160deg, #05070f 0%, #070b1a 40%, #050914 100%);
+  }
+
+  /* ===== КАНВАС ДЛЯ БЛЁСТОК ===== */
+  #sparkles {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* ===== ШАПКА ===== */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 28px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(14px);
+    background: rgba(5,8,20,0.55);
+    border-bottom: 1px solid rgba(80,120,255,0.18);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand h1 { font-size: 1.25rem; letter-spacing: 0.5px; }
+  .brand .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #3b7bff;
+    box-shadow: 0 0 14px #3b7bff, 0 0 28px #3b7bff;
+    animation: pulse 2.2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+
+  .btn-neuro {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 20px;
+    border-radius: 14px;
+    border: 1px solid rgba(90,140,255,0.45);
+    background: linear-gradient(135deg, rgba(40,80,220,0.35), rgba(20,40,120,0.35));
+    color: #dfe8ff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s, background .15s;
+    box-shadow: 0 6px 22px rgba(30,80,255,0.25);
+  }
+  .btn-neuro:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 30px rgba(30,80,255,0.45);
+    background: linear-gradient(135deg, rgba(50,100,255,0.5), rgba(25,50,150,0.5));
+  }
+  .btn-neuro .burger {
+    display: inline-flex; flex-direction: column; gap: 3px;
+  }
+  .btn-neuro .burger span {
+    width: 16px; height: 2px; background: #bcd0ff; border-radius: 2px;
+    transition: transform .2s, opacity .2s;
+  }
+  .btn-neuro.open .burger span:nth-child(1){ transform: translateY(5px) rotate(45deg); }
+  .btn-neuro.open .burger span:nth-child(2){ opacity: 0; }
+  .btn-neuro.open .burger span:nth-child(3){ transform: translateY(-5px) rotate(-45deg); }
+
+  /* ===== ЛЕВАЯ ПАНЕЛЬ ===== */
+  .side-panel {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 340px;
+    max-width: 88vw;
+    z-index: 60;
+    background: linear-gradient(180deg, rgba(10,16,38,0.96), rgba(6,10,26,0.98));
+    border-right: 1px solid rgba(80,120,255,0.22);
+    box-shadow: 30px 0 80px rgba(0,0,0,0.6);
+    transform: translateX(-105%);
+    transition: transform .38s cubic-bezier(.2,.8,.2,1);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 18px 24px;
+    overflow-y: auto;
+  }
+  .side-panel.open { transform: translateX(0); }
+  .side-panel h2 {
+    font-size: 1rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #7f9dff;
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .side-panel h2::after {
+    content: ""; flex: 1; height: 1px;
+    background: linear-gradient(90deg, rgba(90,140,255,0.5), transparent);
+  }
+
+  .filter-group { margin-bottom: 22px; }
+  .filter-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.82rem;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: #8aa4e8;
+    margin-bottom: 10px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    padding: 7px 13px;
+    border-radius: 10px;
+    border: 1px solid rgba(90,130,240,0.28);
+    background: rgba(20,32,70,0.5);
+    color: #c9d6ff;
+    cursor: pointer;
+    font-size: 0.83rem;
+    transition: all .15s;
+    user-select: none;
+  }
+  .chip:hover { border-color: #4d7dff; color: #fff; }
+  .chip.active {
+    background: linear-gradient(135deg, #2f66ff, #1b3fbf);
+    border-color: #5a8bff;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(50,100,255,0.5);
+  }
+
+  .clear-btn {
+    margin-top: auto;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(120,150,255,0.3);
+    color: #b9c8ff;
+    padding: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    transition: background .15s;
+  }
+  .clear-btn:hover { background: rgba(90,130,255,0.15); }
+
+  /* затемнение под панелью */
+  .overlay {
+    position: fixed; inset: 0; z-index: 55;
+    background: rgba(2,4,12,0.6);
+    backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+
+  /* ===== ОСНОВНОЙ КОНТЕНТ ===== */
+  main {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 34px 26px 80px;
+  }
+  .page-title {
+    text-align: center;
+    margin-bottom: 6px;
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, #ffffff, #8fb4ff 60%, #4d7dff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    letter-spacing: 0.5px;
+  }
+  .page-sub {
+    text-align: center;
+    color: #7e90c4;
+    margin-bottom: 30px;
+    font-size: 0.98rem;
+  }
+
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .results-count {
+    font-weight: 600;
+    color: #8fb0ff;
+    font-size: 1rem;
+  }
+
+  .products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 22px;
+  }
+  .product-card {
+    background: linear-gradient(165deg, rgba(22,32,66,0.85), rgba(10,16,38,0.9));
+    border: 1px solid rgba(80,120,255,0.18);
+    border-radius: 18px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform .18s, box-shadow .18s, border-color .18s;
+    box-shadow: 0 8px 26px rgba(0,0,0,0.45);
+  }
+  .product-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(100,150,255,0.55);
+    box-shadow: 0 18px 44px rgba(30,80,255,0.28);
+  }
+  .product-photo {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    display: block;
+    background: #0b1020;
+    border-bottom: 1px solid rgba(80,120,255,0.15);
+  }
+  .product-body { padding: 16px 16px 18px; display: flex; flex-direction: column; flex: 1; }
+  .product-name { font-weight: 700; font-size: 1.02rem; margin-bottom: 6px; color: #eaf0ff; }
+  .product-tags { color: #7f90c0; font-size: 0.78rem; margin-bottom: 12px; line-height: 1.4; }
+  .product-price {
+    font-weight: 800;
+    font-size: 1.22rem;
+    color: #6fa0ff;
+    margin-bottom: 14px;
+  }
+  .product-link {
+    display: block;
+    text-align: center;
+    text-decoration: none;
+    padding: 11px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #fff;
+    background: linear-gradient(135deg, #2f66ff, #1b3fbf);
+    transition: filter .15s, box-shadow .15s;
+    margin-top: auto;
+    box-shadow: 0 6px 18px rgba(40,90,255,0.35);
+  }
+  .product-link:hover { filter: brightness(1.15); box-shadow: 0 8px 26px rgba(60,120,255,0.55); }
+
+  .empty-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: #6f7fb0;
+    font-size: 1.05rem;
+  }
+
+  /* тост при взрыве (ненавязчиво) */
+  @media (max-width: 640px) {
+    header { padding: 14px 16px; }
+    .brand h1 { font-size: 1rem; }
+    .btn-neuro { padding: 9px 14px; font-size: 0.85rem; }
+    .page-title { font-size: 1.5rem; }
+    main { padding: 22px 14px 60px; }
+    .products-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+    .product-body { padding: 12px; }
+    .product-name { font-size: 0.92rem; }
+    .product-price { font-size: 1.05rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-layer"></div>
+<canvas id="sparkles"></canvas>
+
+<header>
+  <div class="brand">
+    <span class="dot"></span>
+    <h1>GIFT&nbsp;NEURO</h1>
+  </div>
+  <button class="btn-neuro" id="neuroBtn" aria-expanded="false">
+    <span class="burger"><span></span><span></span><span></span></span>
+    Нейрофильтры
+  </button>
+</header>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- ===== ЛЕВАЯ ПАНЕЛЬ ===== -->
+<aside class="side-panel" id="sidePanel" aria-hidden="true">
+  <h2>Нейрофильтры</h2>
+
+  <div class="filter-group">
+    <label>Кому дарим</label>
+    <div class="chips" id="recipientChips"></div>
+  </div>
+
+  <div class="filter-group">
+    <label>Праздник</label>
+    <div class="chips" id="occasionChips"></div>
+  </div>
+
+  <div class="filter-group">
+    <label>Бюджет</label>
+    <div class="chips" id="budgetChips"></div>
+  </div>
+
+  <button class="clear-btn" id="clearBtn">Сбросить всё</button>
+</aside>
+
+<!-- ===== КОНТЕНТ ===== -->
+<main>
+  <h2 class="page-title">Нейрофильтр подарков</h2>
+  <p class="page-sub">Открой панель слева и подбери подарок за пару кликов</p>
+
+  <div class="results-header">
+    <span class="results-count" id="resultsCount">Выберите параметры</span>
+  </div>
+
+  <div class="products-grid" id="productsGrid">
+    <div class="empty-message">Нажми «Нейрофильтры» и выбери получателя и праздник</div>
+  </div>
+</main>
+
+<script>
+/* =========================================================
+   1. ДАННЫЕ ТОВАРОВ
+   Замени url на партнёрские ссылки, а photo — на реальные фото.
+   ========================================================= */
+const PRODUCTS = [
+  { id: 1,  name: 'Свеча ароматическая',        price: 890,  recipients: ['маме','сестре','бабушке'], occasions: ['8 марта','новый год','день рождения','14 февраля'], budget: '500-1500', photo: 'https://picsum.photos/seed/candle/600/450', url: 'https://example.com/affiliate/candle' },
+  { id: 2,  name: 'Набор для виски',            price: 2400, recipients: ['папе','брату','дедушке'], occasions: ['23 февраля','новый год','день рождения'], budget: '1500-3000', photo: 'https://picsum.photos/seed/whiskey/600/450', url: 'https://example.com/affiliate/whiskey' },
+  { id: 3,  name: 'Плюшевый мишка',             price: 650,  recipients: ['дочери','сыну','сестре'], occasions: ['14 февраля','8 марта','день рождения','новый год'], budget: '500-1500', photo: 'https://picsum.photos/seed/teddy/600/450', url: 'https://example.com/affiliate/teddy' },
+  { id: 4,  name: 'Игрушка для кошки',          price: 350,  recipients: ['кошке'], occasions: ['новый год','день рождения'], budget: 'до 500', photo: 'https://picsum.photos/seed/cat/600/450', url: 'https://example.com/affiliate/cat-toy' },
+  { id: 5,  name: 'Игрушка для собаки',         price: 450,  recipients: ['собаке'], occasions: ['новый год','день рождения'], budget: 'до 500', photo: 'https://picsum.photos/seed/dog/600/450', url: 'https://example.com/affiliate/dog-toy' },
+  { id: 6,  name: 'Косметический набор',        price: 3200, recipients: ['маме','сестре','бабушке'], occasions: ['8 марта','день рождения','14 февраля'], budget: '3000+', photo: 'https://picsum.photos/seed/cosmetics/600/450', url: 'https://example.com/affiliate/cosmetics' },
+  { id: 7,  name: 'Кожаный ремень',             price: 1800, recipients: ['папе','брату','дедушке'], occasions: ['23 февраля','день рождения','новый год'], budget: '1500-3000', photo: 'https://picsum.photos/seed/belt/600/450', url: 'https://example.com/affiliate/belt' },
+  { id: 8,  name: 'Пасхальный набор',           price: 1200, recipients: ['маме','бабушке','папе','дедушке'], occasions: ['пасха'], budget: '500-1500', photo: 'https://picsum.photos/seed/easter/600/450', url: 'https://example.com/affiliate/easter' },
+  { id: 9,  name: 'Настольная игра',            price: 1900, recipients: ['брату','сестре','сыну','дочери'], occasions: ['новый год','день рождения','23 февраля'], budget: '1500-3000', photo: 'https://picsum.photos/seed/boardgame/600/450', url: 'https://example.com/affiliate/boardgame' },
+  { id: 10, name: 'Букет цветов',               price: 2500, recipients: ['маме','бабушке','сестре'], occasions: ['8 марта','14 февраля','день рождения'], budget: '1500-3000', photo: 'https://picsum.photos/seed/flowers/600/450', url: 'https://example.com/affiliate/flowers' },
+  { id: 11, name: 'Термокружка',                price: 750,  recipients: ['папе','брату','коллеге','дедушке'], occasions: ['23 февраля','новый год','день рождения'], budget: '500-1500', photo: 'https://picsum.photos/seed/tumbler/600/450', url: 'https://example.com/affiliate/tumbler' },
+  { id: 12, name: 'Сладости ручной работы',     price: 950,  recipients: ['маме','бабушке','сестре','коллеге'], occasions: ['8 марта','новый год','день рождения','14 февраля'], budget: '500-1500', photo: 'https://picsum.photos/seed/sweets/600/450', url: 'https://example.com/affiliate/sweets' },
+  { id: 13, name: 'Рюкзак городской',           price: 2800, recipients: ['сыну','дочери','брату','сестре'], occasions: ['1 сентября','день рождения','новый год'], budget: '1500-3000', photo: 'https://picsum.photos/seed/backpack/600/450', url: 'https://example.com/affiliate/backpack' },
+  { id: 14, name: 'Георгиевская лента + открытка', price: 250, recipients: ['папе','дедушке','бабушке','маме'], occasions: ['9 мая'], budget: 'до 500', photo: 'https://picsum.photos/seed/victory/600/450', url: 'https://example.com/affiliate/victory' },
+  { id: 15, name: 'Подарочный сертификат',      price: 2000, recipients: ['маме','папе','брату','сестре','коллеге'], occasions: ['новый год','день рождения','8 марта','23 февраля','14 февраля'], budget: '1500-3000', photo: 'https://picsum.photos/seed/certificate/600/450', url: 'https://example.com/affiliate/certificate' },
+];
+
+/* =========================================================
+   2. КОНФИГУРАЦИЯ
+   ========================================================= */
+const RECIPIENTS = ['брату','сестре','маме','папе','дедушке','бабушке','сыну','дочери','собаке','кошке','другу','коллеге'];
+const OCCASIONS  = ['новый год','8 марта','23 февраля','14 февраля','день рождения','пасха','1 сентября','9 мая'];
+const BUDGETS = [
+  { label: 'до 500 ₽',     value: 'до 500' },
+  { label: '500–1500 ₽',   value: '500-1500' },
+  { label: '1500–3000 ₽',  value: '1500-3000' },
+  { label: '3000+ ₽',      value: '3000+' },
+];
+
+let selectedRecipient = null;
+let selectedOccasion  = null;
+let selectedBudget    = null;
+
+/* =========================================================
+   3. РЕНДЕР ЧИПОВ
+   ========================================================= */
+function renderChips(containerId, items, type, selectedValue) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  items.forEach(item => {
+    const label = type === 'budget' ? item.label : item;
+    const value = type === 'budget' ? item.value : item;
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (selectedValue === value ? ' active' : '');
+    chip.textContent = label;
+    chip.dataset.value = value;
+    chip.dataset.type = type;
+    chip.addEventListener('click', () => handleChipClick(type, value));
+    container.appendChild(chip);
+  });
+}
+
+function handleChipClick(type, value) {
+  if (type === 'recipient') selectedRecipient = selectedRecipient === value ? null : value;
+  if (type === 'occasion')  selectedOccasion  = selectedOccasion  === value ? null : value;
+  if (type === 'budget')    selectedBudget    = selectedBudget    === value ? null : value;
+  renderAll();
+  filterProducts();
+}
+
+function renderAll() {
+  renderChips('recipientChips', RECIPIENTS, 'recipient', selectedRecipient);
+  renderChips('occasionChips',  OCCASIONS,  'occasion',  selectedOccasion);
+  renderChips('budgetChips',    BUDGETS,    'budget',    selectedBudget);
+}
+
+/* =========================================================
+   4. ФИЛЬТРАЦИЯ
+   ========================================================= */
+function filterProducts() {
+  const grid = document.getElementById('productsGrid');
+  const countEl = document.getElementById('resultsCount');
+
+  if (!selectedRecipient && !selectedOccasion && !selectedBudget) {
+    grid.innerHTML = '<div class="empty-message">Нажми «Нейрофильтры» и выбери получателя и праздник</div>';
+    countEl.textContent = 'Выберите параметры';
+    return;
+  }
+
+  const filtered = PRODUCTS.filter(p => {
+    if (selectedRecipient && !p.recipients.includes(selectedRecipient)) return false;
+    if (selectedOccasion  && !p.occasions.includes(selectedOccasion))  return false;
+    if (selectedBudget    && p.budget !== selectedBudget)              return false;
+    return true;
+  });
+
+  countEl.textContent = `Найдено: ${filtered.length} ${plural(filtered.length,'товар','товара','товаров')}`;
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty-message">Ничего не нашлось. Попробуй изменить фильтры.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(p => `
+    <div class="product-card">
+      <img class="product-photo" src="${p.photo}" alt="${p.name}" loading="lazy">
+      <div class="product-body">
+        <div class="product-name">${p.name}</div>
+        <div class="product-tags">${p.recipients.slice(0,3).join(', ')}${p.recipients.length>3?'…':''}</div>
+        <div class="product-price">${p.price.toLocaleString('ru-RU')} ₽</div>
+        <a class="product-link" href="${p.url}" target="_blank" rel="noopener">Перейти в магазин</a>
+      </div>
+    </div>
+  `).join('');
+}
+
+function plural(n, one, few, many) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return one;
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
+  return many;
+}
+
+/* =========================================================
+   5. ОТКРЫТИЕ / ЗАКРЫТИЕ ПАНЕЛИ
+   ========================================================= */
+const neuroBtn = document.getElementById('neuroBtn');
+const sidePanel = document.getElementById('sidePanel');
+const overlay = document.getElementById('overlay');
+
+function setPanel(open) {
+  sidePanel.classList.toggle('open', open);
+  overlay.classList.toggle('show', open);
+  neuroBtn.classList.toggle('open', open);
+  neuroBtn.setAttribute('aria-expanded', open);
+  sidePanel.setAttribute('aria-hidden', !open);
+}
+neuroBtn.addEventListener('click', () => setPanel(!sidePanel.classList.contains('open')));
+overlay.addEventListener('click', () => setPanel(false));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') setPanel(false); });
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  selectedRecipient = selectedOccasion = selectedBudget = null;
+  renderAll();
+  filterProducts();
+});
+
+/* =========================================================
+   6. ФОН: ЛЕТАЮЩИЕ БЛЁСТКИ + ВЗРЫВ ПРИ КЛИКЕ
+   ========================================================= */
+const canvas = document.getElementById('sparkles');
+const ctx = canvas.getContext('2d');
+let W, H, DPR;
+const sparkles = [];      // постоянные летающие точки
+const particles = [];     // частицы взрыва
+
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width  = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Создаём постоянные блёстки
+const SPARKLE_COUNT = Math.min(90, Math.floor(window.innerWidth / 16));
+function makeSparkle() {
+  return {
+    x: Math.random() * W,
+    y: Math.random() * H,
+    r: Math.random() * 1.6 + 0.4,
+    vx: (Math.random() - 0.5) * 0.25,
+    vy: (Math.random() - 0.5) * 0.25,
+    a: Math.random() * 0.5 + 0.2,
+    tw: Math.random() * Math.PI * 2,
+    tws: Math.random() * 0.02 + 0.008,
+  };
+}
+for (let i = 0; i < SPARKLE_COUNT; i++) sparkles.push(makeSparkle());
+
+// Взрыв частиц
+function explode(x, y) {
+  const COUNT = 26 + Math.floor(Math.random() * 14);
+  for (let i = 0; i < COUNT; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 5 + 1.5;
+    particles.push({
+      x, y,
+      vx: Math.cos(ang) * speed,
+      vy: Math.sin(ang) * speed,
+      r: Math.random() * 2.4 + 0.8,
+      life: 1,
+      decay: 0.012 + Math.random() * 0.02,
+      hue: 200 + Math.random() * 40, // сине-голубой
+    });
+  }
+  // добавим пару вспышек
+  for (let i = 0; i < 5; i++) {
+    const ang = Math.random() * Math.PI * 2;
+    particles.push({
+      x, y,
+      vx: Math.cos(ang) * (Math.random()*1.5),
+      vy: Math.sin(ang) * (Math.random()*1.5),
+      r: Math.random() * 4 + 2,
+      life: 1,
+      decay: 0.04,
+      hue: 210 + Math.random() * 20,
+    });
+  }
+}
+
+// Клик по фону = взрыв
+document.addEventListener('pointerdown', (e) => {
+  // Не взрываем, если клик по панели, кнопке, карточке или ссылке
+  const interactive = e.target.closest('button, a, .chip, .side-panel, .product-card, .clear-btn');
+  if (interactive) return;
+  explode(e.clientX, e.clientY);
+}, { passive: true });
+
+// Анимация
+function animate() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Блёстки
+  ctx.globalCompositeOperation = 'lighter';
+  for (const s of sparkles) {
+    s.x += s.vx;
+    s.y += s.vy;
+    s.tw += s.tws;
+    // заворачиваем по краям
+    if (s.x < -10) s.x = W + 10;
+    if (s.x > W + 10) s.x = -10;
+    if (s.y < -10) s.y = H + 10;
+    if (s.y > H + 10) s.y = -10;
+
+    const alpha = s.a * (0.6 + 0.4 * Math.sin(s.tw));
+    const grd = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 6);
+    grd.addColorStop(0, `rgba(150,200,255,${alpha})`);
+    grd.addColorStop(0.4, `rgba(70,130,255,${alpha * 0.55})`);
+    grd.addColorStop(1, 'rgba(40,80,200,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r * 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ядро
+    ctx.fillStyle = `rgba(220,235,255,${alpha})`;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Частицы взрыва
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vx *= 0.985;
+    p.vy *= 0.985;
+    p.vy += 0.02; // лёгкая гравитация
+    p.life -= p.decay;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+
+    const a = Math.max(p.life, 0);
+    const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 5);
+    grd.addColorStop(0, `hsla(${p.hue}, 100%, 80%, ${a})`);
+    grd.addColorStop(0.5, `hsla(${p.hue}, 100%, 60%, ${a * 0.7})`);
+    grd.addColorStop(1, `hsla(${p.hue}, 100%, 50%, 0)`);
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = `hsla(${p.hue}, 100%, 92%, ${a})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.globalCompositeOperation = 'source-over';
+  requestAnimationFrame(animate);
+}
+
+/* =========================================================
+   7. СТАРТ
+   ========================================================= */
+renderAll();
+animate();
+</script>
+</body>
+</html>
