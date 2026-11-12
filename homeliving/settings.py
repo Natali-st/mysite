@@ -26,6 +26,8 @@ SECRET_KEY = 'django-insecure-*+8jg*ml08965grq5y3$*9jch1yr!7hafrzq0@-(h)riw%j#n&
 
 ALLOWED_HOSTS = ['*']
 
+CSRF_TRUSTED_ORIGINS = ['https://izmeri-kupi.ru', 'http://izmeri-kupi.ru']
+
 DEBUG = True
 
 # Application definition
