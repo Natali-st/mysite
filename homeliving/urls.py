@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.views.generic import TemplateView
 from django.contrib import admin
 from django.urls import path
 from articles import views
@@ -27,6 +28,7 @@ urlpatterns = [
     path('article/<int:pk>/', views.article_detail, name='article_detail'),
     path('like/<int:pk>/', views.add_like, name='add_like'),
     path('rate/<int:pk>/', views.rate_article, name='rate_article'),
+    path('zen_ZZ0ix1oX7F8qYB1pFPuCMw9sP964tXhqmRv3vIACbRAPCnB5K3NMk3vvzfGVpt7h.html', TemplateView.as_view(template_name='zen_ZZ0ix1oX7F8qYB1pFPuCMw9sP964tXhqmRv3vIACbRAPCnB5K3NMk3vvzfGVpt7h.html', content_type='text/html'))
 ]
 
 if settings.DEBUG:
