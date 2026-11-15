@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Новогодний Пакман</title>
+    <style>
+        /* Стилизация под ваш сайт */
+        body {
+            background-color: #FDF6EC; /* Светлый кремовый фон */
+            color: #2D5A4C; /* Темно-зеленый цвет текста */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { 
+            color: #2B2A7E; /* Темно-синий/фиолетовый заголовок */
+            margin: 10px;
+            font-size: 2.5em;
+        }
+        .subtitle {
+            color: #555;
+            margin-bottom: 20px;
+        }
+        canvas {
+            /* Градиентный фон, как на карточке сайта */
+            background: linear-gradient(135deg, #FFE4D6 0%, #F5D5E0 100%);
+            border-radius: 20px; /* Закругленные углы */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* Мягкая тень */
+            max-width: 100%;
+            height: auto;
+            image-rendering: pixelated; /* Для четкости пикселей при масштабировании */
+        }
+        #ui {
+            font-size: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 30px;
+            font-weight: bold;
+        }
+        .score { color: #C97A51; /* Оранжево-коричневый */ }
+        .lives { color: #E05A5A; }
+        p { color: #777; font-size: 14px; margin-top: 15px;}
+        
+        /* Кнопки в стиле сайта */
+        .btn-container {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-primary {
+            background-color: #C97A51;
+            color: white;
+        }
+        .btn-secondary {
+            background-color: white;
+            color: #2D5A4C;
+            border: 2px solid #2D5A4C;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Новогодний Пакман</h1>
+    <div class="subtitle">Собери все подарки и избегай призраков!</div>
+    
+    <div id="ui">
+        <div>ПОДАРКИ: <span id="score" class="score">0</span></div>
+        <div>ЖИЗНИ: <span id="lives" class="lives">3</span></div>
+    </div>
+    
+    <canvas id="gameCanvas" width="450" height="450"></canvas>
+    
+    <p>Управление: Стрелки на клавиатуре</p>
+
+    <div class="btn-container">
+        <button class="btn btn-primary" onclick="initGame()">Начать заново</button>
+        <button class="btn btn-secondary" onclick="togglePause()">Пауза</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const tileSize = 30;
+        const cols = 15;
+        const rows = 15;
+
+        // Карта: 1 - стена (палка), 0 - подарок (для сбора), 2 - пусто, 3 - елка (декор), 4 - дед мороз (декор), 5 - подарок (декор)
+        const originalMap = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,0,1,1,0,1,0,1,1,0,1,0,1],
+            [1,0,0,0,0,1,0,0,0,1,0,0,0,0,1],
+            [1,1,1,0,1,1,1,0,1,1,1,0,1,1,1],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], // Тоннель
+            [1,1,1,0,1,1,1,0,1,1,1,0,1,1,1],
+            [1,0,0,0,0,1,0,0,0,1,0,0,0,0,1],
+            [1,0,1,0,1,1,0,1,0,1,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,1,1,0,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let map = [];
+        let score = 0;
+        let lives = 3;
+        let giftsLeft = 0;
+        let gameOver = false;
+        let gameWon = false;
+        let isPaused = false;
+        let frameCount = 0;
+        let mouthOpen = true;
+
+        // Массив для снега
+        let snowflakes = [];
+        // Массив для бонусных текстов
+        let bonusTexts = [];
+
+        // Игрок (Пакман)
+        let player = { x: 7, y: 7, dir: 'right', nextDir: 'right', speed: 8 }; 
+        
+        // Призраки
+        let ghosts = [
+            { x: 1, y: 1, dir: 'right', color: '#FF0000', speed: 10 },
+            { x: 13, y: 13, dir: 'left', color: '#FFB8FF', speed: 11 },
+            { x: 1, y: 13, dir: 'down', color: '#00FFFF', speed: 12 }
+        ];
+
+        function initGame() {
+            map = originalMap.map(row => [...row]);
+            giftsLeft = 0;
+            for(let y=0; y<rows; y++) {
+                for(let x=0; x<cols; x++) {
+                    if(map[y][x] === 0) giftsLeft++;
+                }
+            }
+            score = 0;
+            lives = 3;
+            gameOver = false;
+            gameWon = false;
+            isPaused = false;
+            bonusTexts = [];
+            updateUI();
+            resetPositions();
+            createSnowflakes();
+            addDecorations();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function resetPositions() {
+            player.x = 7; player.y = 7; player.dir = 'right'; player.nextDir = 'right';
+            ghosts[0].x = 1; ghosts[0].y = 1; ghosts[0].dir = 'right';
+            ghosts[1].x = 13; ghosts[1].y = 13; ghosts[1].dir = 'left';
+            ghosts[2].x = 1; ghosts[2].y = 13; ghosts[2].dir = 'up';
+        }
+
+        function updateUI() {
+            document.getElementById('score').innerText = score;
+            document.getElementById('lives').innerText = lives;
+        }
+
+        // Создание снежинок
+        function createSnowflakes() {
+            snowflakes = [];
+            for (let i = 0; i < 100; i++) {
+                snowflakes.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 2 + 1,
+                    speed: Math.random() * 1 + 0.5
+                });
+            }
+        }
+
+        // Добавление декораций на поле
+        function addDecorations() {
+            const decorations = ['🎄', '🎅', '🎁'];
+            for(let y=0; y<rows; y++) {
+                for(let x=0; x<cols; x++) {
+                    // Если клетка пустая (2) и это не стартовая позиция игрока
+                    if(map[y][x] === 2 && !(x === 7 && y === 7)) {
+                        // С вероятностью 30% добавляем декорацию
+                        if(Math.random() < 0.3) {
+                            const randomDecor = decorations[Math.floor(Math.random() * decorations.length)];
+                            if(randomDecor === '🎄') map[y][x] = 3;
+                            else if(randomDecor === '🎅') map[y][x] = 4;
+                            else if(randomDecor === '🎁') map[y][x] = 5;
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawMap() {
+            for(let y=0; y<rows; y++) {
+                for(let x=0; x<cols; x++) {
+                    if(map[y][x] === 1) {
+                        // Рисуем стену в виде палки/бревна
+                        ctx.fillStyle = '#8B4513'; // Коричневый цвет дерева
+                        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                        
+                        // Текстура дерева (полоски)
+                        ctx.strokeStyle = '#A0522D';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(x * tileSize + 5, y * tileSize + 5);
+                        ctx.lineTo(x * tileSize + tileSize - 5, y * tileSize + tileSize - 5);
+                        ctx.moveTo(x * tileSize + tileSize - 5, y * tileSize + 5);
+                        ctx.lineTo(x * tileSize + 5, y * tileSize + tileSize - 5);
+                        ctx.stroke();
+                        
+                        // Обводка
+                        ctx.strokeStyle = '#5D2906';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                        
+                    } else if(map[y][x] === 0) {
+                        // Рисуем подарок для сбора
+                        ctx.font = `${tileSize - 8}px Arial`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('🎁', x * tileSize + tileSize/2, y * tileSize + tileSize/2 + 2);
+                    } else if(map[y][x] === 3) {
+                        // Рисуем елку (декор)
+                        ctx.font = `${tileSize - 4}px Arial`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('🎄', x * tileSize + tileSize/2, y * tileSize + tileSize/2 + 2);
+                    } else if(map[y][x] === 4) {
+                        // Рисуем Деда Мороза (декор)
+                        ctx.font = `${tileSize - 4}px Arial`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('🎅', x * tileSize + tileSize/2, y * tileSize + tileSize/2 + 2);
+                    } else if(map[y][x] === 5) {
+                        // Рисуем подарок (декор)
+                        ctx.font = `${tileSize - 8}px Arial`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText('🎁', x * tileSize + tileSize/2, y * tileSize + tileSize/2 + 2);
+                    }
+                }
+            }
+        }
+
+        function drawPlayer() {
+            let px = player.x * tileSize + tileSize / 2;
+            let py = player.y * tileSize + tileSize / 2;
+            let radius = tileSize / 2 - 2;
+            
+            let angle = 0;
+            if(player.dir === 'right') angle = 0;
+            else if(player.dir === 'down') angle = Math.PI / 2;
+            else if(player.dir === 'left') angle = Math.PI;
+            else if(player.dir === 'up') angle = -Math.PI / 2;
+
+            let mouthAngle = mouthOpen ? 0.3 : 0.05;
+
+            // Пакман в цвете кнопок сайта
+            ctx.fillStyle = '#C97A51';
+            ctx.beginPath();
+            ctx.arc(px, py, radius, angle + mouthAngle, angle + Math.PI * 2 - mouthAngle);
+            ctx.lineTo(px, py);
+            ctx.fill();
+        }
+
+        function drawGhosts() {
+            ghosts.forEach(g => {
+                let gx = g.x * tileSize;
+                let gy = g.y * tileSize;
+                
+                ctx.fillStyle = g.color;
+                ctx.beginPath();
+                ctx.arc(gx + tileSize/2, gy + tileSize/2 - 2, tileSize/2 - 2, Math.PI, 0, false);
+                ctx.lineTo(gx + tileSize - 2, gy + tileSize - 2);
+                // Волнистый низ
+                for(let i=0; i<3; i++) {
+                    ctx.lineTo(gx + tileSize - 2 - (i * 8 + 4), gy + tileSize - 8);
+                    ctx.lineTo(gx + tileSize - 2 - (i * 8 + 8), gy + tileSize - 2);
+                }
+                ctx.lineTo(gx + 2, gy + tileSize/2 - 2);
+                ctx.fill();
+
+                // Глаза
+                ctx.fillStyle = '#FFF';
+                ctx.beginPath(); ctx.arc(gx + 9, gy + 12, 4, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(gx + 21, gy + 12, 4, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(gx + 9, gy + 12, 2, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(gx + 21, gy + 12, 2, 0, Math.PI*2); ctx.fill();
+            });
+        }
+
+        // Отрисовка снега
+        function drawSnow() {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            snowflakes.forEach(flake => {
+                ctx.beginPath();
+                ctx.arc(flake.x, flake.y, flake.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Движение снега
+                flake.y += flake.speed;
+                if (flake.y > canvas.height) {
+                    flake.y = 0;
+                    flake.x = Math.random() * canvas.width;
+                }
+            });
+        }
+
+        // Отрисовка бонусных текстов
+        function drawBonusTexts() {
+            for (let i = bonusTexts.length - 1; i >= 0; i--) {
+                const text = bonusTexts[i];
+                ctx.fillStyle = `rgba(201, 122, 81, ${text.opacity})`;
+                ctx.font = 'bold 20px Segoe UI';
+                ctx.textAlign = 'center';
+                ctx.fillText(text.value, text.x, text.y);
+                
+                // Движение текста вверх и исчезновение
+                text.y -= 1;
+                text.opacity -= 0.02;
+                
+                if (text.opacity <= 0) {
+                    bonusTexts.splice(i, 1);
+                }
+            }
+        }
+
+        // Улучшенная функция движения для всех сущностей
+        function moveEntity(entity, isPlayer = false) {
+            if (frameCount % entity.speed !== 0) return;
+
+            let nextX = entity.x;
+            let nextY = entity.y;
+
+            // Для игрока: проверяем, можно ли повернуть в "следующем" направлении
+            if (isPlayer && entity.nextDir !== entity.dir) {
+                let testX = entity.x;
+                let testY = entity.y;
+                if (entity.nextDir === 'up') testY--;
+                if (entity.nextDir === 'down') testY++;
+                if (entity.nextDir === 'left') testX--;
+                if (entity.nextDir === 'right') testX++;
+                
+                // Проверка тоннеля
+                if (testX < 0) testX = cols - 1;
+                if (testX >= cols) testX = 0;
+
+                if (map[testY] && map[testY][testX] !== 1) {
+                    entity.dir = entity.nextDir;
+                }
+            }
+
+            // Вычисляем следующую позицию
+            if (entity.dir === 'up') nextY--;
+            if (entity.dir === 'down') nextY++;
+            if (entity.dir === 'left') nextX--;
+            if (entity.dir === 'right') nextX++;
+
+            // Тоннель
+            if (nextX < 0) nextX = cols - 1;
+            if (nextX >= cols) nextX = 0;
+
+            // Если путь свободен, двигаемся
+            if (map[nextY] && map[nextY][nextX] !== 1) {
+                entity.x = nextX;
+                entity.y = nextY;
+            } 
+            // Если призрак уперся в стену или находится на перекрестке, выбираем новое направление
+            else if (!isPlayer) {
+                const dirs = ['up', 'down', 'left', 'right'];
+                const opposite = { 'up': 'down', 'down': 'up', 'left': 'right', 'right': 'left' };
+                
+                let validDirs = dirs.filter(d => {
+                    // Не позволяем разворачиваться на 180 градусов, если есть другие пути
+                    if (d === opposite[entity.dir]) {
+                        // Проверяем, есть ли другие пути кроме обратного
+                        let otherDirsExist = dirs.some(otherD => {
+                            if (otherD === opposite[entity.dir]) return false;
+                            let tx = entity.x, ty = entity.y;
+                            if (otherD === 'up') ty--;
+                            if (otherD === 'down') ty++;
+                            if (otherD === 'left') tx--;
+                            if (otherD === 'right') tx++;
+                            if (tx < 0) tx = cols - 1;
+                            if (tx >= cols) tx = 0;
+                            return map[ty] && map[ty][tx] !== 1;
+                        });
+                        if (otherDirsExist) return false;
+                    }
+
+                    let tx = entity.x, ty = entity.y;
+                    if (d === 'up') ty--;
+                    if (d === 'down') ty++;
+                    if (d === 'left') tx--;
+                    if (d === 'right') tx++;
+                    if (tx < 0) tx = cols - 1;
+                    if (tx >= cols) tx = 0;
+                    return map[ty] && map[ty][tx] !== 1;
+                });
+
+                if (validDirs.length > 0) {
+                    entity.dir = validDirs[Math.floor(Math.random() * validDirs.length)];
+                }
+            }
+        }
+
+        function checkCollisions() {
+            // Сбор подарков
+            if (map[player.y][player.x] === 0) {
+                map[player.y][player.x] = 2;
+                score += 10;
+                giftsLeft--;
+                updateUI();
+                // Добавляем бонусный текст
+                bonusTexts.push({
+                    x: player.x * tileSize + tileSize / 2,
+                    y: player.y * tileSize,
+                    value: '+10',
+                    opacity: 1
+                });
+            }
+
+            if (giftsLeft === 0) {
+                gameWon = true;
+            }
+
+            // Столкновение с призраками
+            ghosts.forEach(g => {
+                if (g.x === player.x && g.y === player.y) {
+                    lives--;
+                    updateUI();
+                    if (lives <= 0) {
+                        gameOver = true;
+                    } else {
+                        resetPositions();
+                    }
+                }
+            });
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            if (!isPaused) {
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        function gameLoop() {
+            if (isPaused) {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#FFF';
+                ctx.font = '40px Segoe UI';
+                ctx.fillText('ПАУЗА', canvas.width/2, canvas.height/2);
+                return;
+            }
+
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#E05A5A';
+                ctx.font = '40px Segoe UI';
+                ctx.fillText('GAME OVER', canvas.width/2, canvas.height/2);
+                ctx.fillStyle = '#FFF';
+                ctx.font = '20px Segoe UI';
+                ctx.fillText('Нажми "Начать заново"', canvas.width/2, canvas.height/2 + 40);
+                return;
+            }
+            if (gameWon) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#C97A51';
+                ctx.font = '40px Segoe UI';
+                ctx.fillText('ПОБЕДА!', canvas.width/2, canvas.height/2);
+                ctx.fillStyle = '#FFF';
+                ctx.font = '20px Segoe UI';
+                ctx.fillText('Все подарки собраны!', canvas.width/2, canvas.height/2 + 40);
+                return;
+            }
+
+            frameCount++;
+            if (frameCount % 15 === 0) mouthOpen = !mouthOpen;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawMap();
+            moveEntity(player, true);
+            ghosts.forEach(g => moveEntity(g, false));
+            checkCollisions();
+            
+            drawPlayer();
+            drawGhosts();
+            drawSnow();
+            drawBonusTexts();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Управление
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') player.nextDir = 'up';
+            if (e.key === 'ArrowDown') player.nextDir = 'down';
+            if (e.key === 'ArrowLeft') player.nextDir = 'left';
+            if (e.key === 'ArrowRight') player.nextDir = 'right';
+        });
+
+        // Запуск игры при загрузке
+        initGame();
+
+    </script>
+</body>
+</html>
